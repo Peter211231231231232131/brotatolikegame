@@ -20,26 +20,39 @@
 <body>
     <!-- HUD -->
     <div id="ui">
+        <!-- TOP STATS -->
         <div class="stat-row">
             <div>HP: <div class="bar-bg"><div id="hpBar" class="bar-fill" style="background:#f44; width:100%"></div></div></div>
-            <div>LVL: <span id="lvlDisplay">1</span></div>
             <div style="color:gold">GOLD: <span id="goldDisplay">0</span></div>
+            <!-- WAVE TIMER -->
+            <div id="wave-timer" style="margin-left:auto; font-size: 24px; font-weight: bold; color: white;">
+                WAVE <span id="waveNum">1</span>: <span id="timeNum">20</span>s
+            </div>
         </div>
-        <!-- WAVE TIMER -->
-        <div id="wave-timer" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-size: 30px; font-weight: bold; color: white; text-shadow: 0 2px 4px black;">
-            WAVE <span id="waveNum">1</span>: <span id="timeNum">20</span>s
+        
+        <!-- BOTTOM XP BAR -->
+        <div style="position: absolute; bottom: 10px; left: 10px; right: 10px;">
+            <div style="text-align: center; font-weight: bold; margin-bottom: 5px;">LEVEL <span id="lvlDisplay">1</span></div>
+            <div class="bar-bg" style="width: 100%; height: 20px; border-color: #00bfff;">
+                <div id="xpBar" class="bar-fill" style="background: #00bfff; width: 0%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEVEL UP OVERLAY -->
+    <div id="levelup" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:20; flex-direction:column; align-items:center; justify-content:center;">
+        <h1 style="color:#00bfff; font-size: 50px; margin-bottom: 20px;">LEVEL UP!</h1>
+        <p style="color:white; margin-bottom: 30px;">Choose an upgrade</p>
+        <div id="levelup-cards" style="display:flex; gap: 20px;">
+            <!-- Cards injected via JS -->
         </div>
     </div>
 
     <!-- SHOP OVERLAY -->
-    <div id="shop" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); flex-direction:column; align-items:center; justify-content:center; z-index: 10;">
+    <div id="shop" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:10; flex-direction:column; align-items:center; justify-content:center;">
         <h1 style="color:gold; font-size: 40px; margin-bottom: 20px;">SHOP</h1>
-        <div id="shop-items" style="display:flex; gap: 20px; margin-bottom: 40px;">
-            <!-- Items injected via JS -->
-        </div>
-        <button id="nextWaveBtn" style="padding: 15px 50px; font-size: 24px; background: #4caf50; color: white; border: none; cursor: pointer; border-radius: 8px;">
-            START WAVE
-        </button>
+        <div id="shop-items" style="display:flex; gap: 20px; margin-bottom: 40px;"></div>
+        <button id="nextWaveBtn" style="padding: 15px 50px; font-size: 24px; background: #4caf50; color: white; border: none; cursor: pointer;">START WAVE</button>
     </div>
 
     <!-- GAME OVER -->

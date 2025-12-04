@@ -1,4 +1,8 @@
-update 1
+update 1 12/4/2025
 added:
 waves - game is no longer just one long game but seperated into waves
 shop - after each wave there is a shop which you can spend your gold
+
+Update 2 12/4/2025
+Added:
+Level bar - when you level up you can choose an upgrade
