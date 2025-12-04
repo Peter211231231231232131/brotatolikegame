@@ -6,7 +6,9 @@ export class Bullet {
         this.dy = Math.sin(angle) * stats.speed;
         this.damage = stats.damage;
         this.life = stats.life || 60;
-        this.size = 6;
+        this.size = stats.type === 'explosive' ? 8 : 6; // Rockets are bigger
+        this.color = stats.color || 'yellow';
+        this.type = stats.type; // Save type
         this.markedForDeletion = false;
     }
 
@@ -18,7 +20,7 @@ export class Bullet {
     }
 
     draw(ctx) {
-        ctx.fillStyle = 'yellow';
+        ctx.fillStyle = this.color;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();

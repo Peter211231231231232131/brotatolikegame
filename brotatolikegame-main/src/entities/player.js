@@ -1,123 +1,42 @@
+import { Enemy } from '../entities/enemy.js';
 import { CONFIG } from '../constants.js';
-import { Bullet } from './bullet.js';
-import { Utils } from '../utils.js';
 
-export class Player {
+export class Spawner {
     constructor(game) {
         this.game = game;
-        this.x = CONFIG.WORLD_SIZE / 2;
-        this.y = CONFIG.WORLD_SIZE / 2;
-        this.vx = 0; this.vy = 0;
-        this.size = 20;
-        
-        this.hp = CONFIG.PLAYER.baseHp;
-        this.maxHp = CONFIG.PLAYER.baseHp;
-        this.xp = 0;
-        this.level = 1;
-        this.nextLevel = 10;
-        this.gold = 0;
-
-        // Weapons
-        this.weapons = [
-            { name: 'Pistol', damage: 10, range: 400, cd: 40, timer: 0, speed: 12, type: 'single' }
-        ];
+        this.timer = 0;
     }
 
-    update(input) {
-        // Apply Config Speed which might change via upgrades
-        const speed = CONFIG.PLAYER.baseSpeed;
+    update() {
+        this.timer--;
+        // Spawn rate logic
+        const interval = Math.max(5, 60 - (this.game.wave * 3));
         
-        if (input.x !== 0) this.vx += input.x * (speed * 0.2);
-        if (input.y !== 0) this.vy += input.y * (speed * 0.2);
-
-        this.vx *= CONFIG.PLAYER.friction;
-        this.vy *= CONFIG.PLAYER.friction;
-        this.x += this.vx;
-        this.y += this.vy;
-
-        this.x = Math.max(this.size, Math.min(CONFIG.WORLD_SIZE - this.size, this.x));
-        this.y = Math.max(this.size, Math.min(CONFIG.WORLD_SIZE - this.size, this.y));
-
-        this.handleCombat();
+        if (this.timer <= 0) {
+            this.spawn();
+            this.timer = interval;
+        }
     }
 
-    handleCombat() {
-        let nearest = null;
-        let minDist = Infinity;
-        
-        this.game.enemies.forEach(e => {
-            const d = Utils.dist(this, e);
-            if (d < minDist) { minDist = d; nearest = e; }
-        });
+    spawn() {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 600; 
+        const px = this.game.player.x + Math.cos(angle) * dist;
+        const py = this.game.player.y + Math.sin(angle) * dist;
 
-        this.weapons.forEach(w => {
-            if (w.timer > 0) w.timer--;
+        if (px > 0 && px < CONFIG.WORLD_SIZE && py > 0 && py < CONFIG.WORLD_SIZE) {
             
-            if (w.timer <= 0 && nearest && minDist < w.range) {
-                const angle = Utils.angle(this, nearest);
-                this.fireWeapon(w, angle);
-                w.timer = w.cd;
-            }
-        });
-    }
+            // Random Enemy Type Logic
+            let type = 'basic';
+            const rand = Math.random();
+            
+            // Wave 3+ start spawning Runners (30% chance)
+            if (this.game.wave >= 3 && rand < 0.3) type = 'runner';
+            
+            // Wave 5+ start spawning Tanks (10% chance)
+            if (this.game.wave >= 5 && rand < 0.1) type = 'tank';
 
-    fireWeapon(w, angle) {
-        if (w.type === 'single') {
-            this.game.bullets.push(new Bullet(this.x, this.y, angle, w));
-        } else if (w.type === 'shotgun') {
-            for(let i = -1; i <= 1; i++) {
-                this.game.bullets.push(new Bullet(this.x, this.y, angle + (i*0.2), w));
-            }
+            this.game.enemies.push(new Enemy(px, py, this.game.player.level, type));
         }
-    }
-
-    gainXp(amount) {
-        this.xp += amount;
-        this.gold += amount;
-        if (this.xp >= this.nextLevel) {
-            this.levelUp();
-        }
-    }
-
-    levelUp() {
-        this.level++;
-        this.xp = 0; // Reset XP Bar
-        this.nextLevel = Math.floor(this.nextLevel * 1.5);
-        
-        // Full Heal on Level Up
-        this.hp = this.maxHp;
-
-        // Weapon Unlocks (Still keep this auto logic if you want)
-        if (this.level === 3) this.weapons.push({ name: 'Shotgun', damage: 6, range: 250, cd: 60, timer: 0, speed: 10, type: 'shotgun' });
-
-        // TRIGGER THE UI
-        this.game.triggerLevelUp();
-    }
-
-    applyItem(item) {
-        if (item.type === 'heal') {
-            this.hp = Math.min(this.hp + item.val, this.maxHp);
-        } else if (item.type === 'maxHp') {
-            this.maxHp += item.val;
-            this.hp += item.val;
-        } else if (item.type === 'damage') {
-            this.weapons.forEach(w => w.damage += item.val);
-        } else if (item.type === 'speed') {
-            CONFIG.PLAYER.baseSpeed += item.val;
-        } else if (item.type === 'cooldown') {
-            this.weapons.forEach(w => w.cd = Math.max(5, w.cd - item.val));
-        }
-    }
-
-    draw(ctx) {
-        ctx.fillStyle = CONFIG.COLORS.player;
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.fillStyle = 'red';
-        ctx.fillRect(this.x - 18, this.y - 12, 36, 6);
     }
 }
