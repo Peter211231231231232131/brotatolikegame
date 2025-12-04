@@ -96,7 +96,25 @@ export class Player {
             console.log("Unlocked Shotgun");
         }
     }
-
+    applyItem(item) {
+        if (item.type === 'heal') {
+            this.hp = Math.min(this.hp + item.val, this.maxHp);
+        } 
+        else if (item.type === 'maxHp') {
+            this.maxHp += item.val;
+            this.hp += item.val;
+        }
+        else if (item.type === 'damage') {
+            this.weapons.forEach(w => w.damage += item.val);
+        }
+        else if (item.type === 'speed') {
+            // Cap speed so it doesn't get uncontrollable
+            if(this.speed < 12) CONFIG.PLAYER.baseSpeed += item.val; 
+        }
+        else if (item.type === 'cooldown') {
+            this.weapons.forEach(w => w.cd = Math.max(5, w.cd - item.val));
+        }
+    }
     draw(ctx) {
         ctx.fillStyle = CONFIG.COLORS.player;
         ctx.strokeStyle = 'white';
