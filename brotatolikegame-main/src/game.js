@@ -3,7 +3,8 @@ import { InputSystem } from './systems/input.js';
 import { Camera } from './systems/camera.js';
 import { Spawner } from './systems/spawner.js';
 import { Shop } from './systems/shop.js';
-import { LevelUpSystem } from './systems/levelup.js'; // Import it
+import { LevelUpSystem } from './systems/levelup.js';
+import { Particle } from './entities/particle.js'; // Make sure this is imported
 import { CONFIG } from './constants.js';
 import { Utils } from './utils.js';
 
@@ -16,10 +17,8 @@ export class Game {
 
         this.input = new InputSystem();
         this.camera = new Camera(this.width, this.height);
-        
-        // Systems
         this.shop = new Shop(this);
-        this.levelSystem = new LevelUpSystem(this); // Init Level System
+        this.levelSystem = new LevelUpSystem(this);
         
         this.resetGame();
 
@@ -35,6 +34,7 @@ export class Game {
         this.enemies = [];
         this.bullets = [];
         this.gems = [];
+        this.particles = []; // <--- THIS WAS LIKELY MISSING
         this.player = new Player(this);
         this.spawner = new Spawner(this);
         this.gameOver = false;
@@ -45,38 +45,51 @@ export class Game {
     startWave() {
         this.state = 'PLAYING';
         this.shop.close();
-        this.waveTimer = 20 + (this.wave * 5); // Waves get longer
+        this.waveTimer = 20 + (this.wave * 5); 
     }
 
-    triggerLevelUp() {
-        this.state = 'LEVEL_UP'; // Pause Game Loop
-        this.levelSystem.show();
+    triggerLevelUp() { 
+        this.state = 'LEVEL_UP'; 
+        this.levelSystem.show(); 
     }
 
-    resumeFromLevelUp() {
-        this.levelSystem.hide();
-        this.state = 'PLAYING';
+    resumeFromLevelUp() { 
+        this.levelSystem.hide(); 
+        this.state = 'PLAYING'; 
     }
+
+    endGame() { 
+        this.gameOver = true; 
+        document.getElementById('gameover').style.display = 'flex'; 
+    }
+
+    // --- THIS IS THE MISSING FUNCTION CAUSING YOUR ERROR ---
+    addParticle(x, y, color) {
+        this.particles.push(new Particle(x, y, color, Math.random() * 3, Math.random() * 5));
+    }
+    // ------------------------------------------------------
 
     update() {
         if (this.gameOver) return;
-
-        // If in Shop or LevelUp, PAUSE game entities
+        
+        // Pause logic
         if (this.state === 'SHOP' || this.state === 'LEVEL_UP') {
             this.updateUI(); 
             return;
         }
 
-        // Timer
+        // Wave Timer
         this.waveTimer -= 1/60;
         if (this.waveTimer <= 0) {
             this.state = 'SHOP';
             this.shop.open();
             this.wave++;
-            this.enemies = []; // Clear board
+            this.enemies = []; 
             this.bullets = [];
+            this.particles = [];
         }
 
+        // Updates
         this.player.update(this.input.axis);
         this.camera.update(this.player);
         this.spawner.update();
@@ -84,12 +97,17 @@ export class Game {
         this.bullets.forEach(b => b.update());
         this.enemies.forEach(e => e.update(this.player));
         this.gems.forEach(g => g.update(this.player));
+        
+        // Update Particles
+        this.particles.forEach(p => p.update()); 
 
         this.checkCollisions();
 
+        // Cleanup
         this.bullets = this.bullets.filter(b => !b.markedForDeletion);
         this.enemies = this.enemies.filter(e => !e.markedForDeletion);
         this.gems = this.gems.filter(g => !g.markedForDeletion);
+        this.particles = this.particles.filter(p => !p.markedForDeletion);
 
         this.updateUI();
     }
@@ -97,9 +115,26 @@ export class Game {
     checkCollisions() {
         this.bullets.forEach(b => {
             this.enemies.forEach(e => {
-                if (Utils.dist(b, e) < b.size + e.size) {
+                if (!b.markedForDeletion && !e.markedForDeletion && Utils.dist(b, e) < b.size + e.size) {
+                    
                     b.markedForDeletion = true;
-                    e.takeDamage(b.damage, b.dx, b.dy, this);
+
+                    // Explosive Logic
+                    if (b.type === 'explosive') {
+                        // Explosion Visuals
+                        for(let i=0; i<20; i++) this.addParticle(b.x, b.y, 'orange');
+                        
+                        // Explosion Damage
+                        this.enemies.forEach(target => {
+                            if (Utils.dist(b, target) < 100) { 
+                                target.takeDamage(b.damage, target.x - b.x, target.y - b.y, this);
+                            }
+                        });
+                    } 
+                    else {
+                        // Normal Hit
+                        e.takeDamage(b.damage, b.dx, b.dy, this);
+                    }
                 }
             });
         });
@@ -119,6 +154,7 @@ export class Game {
 
         this.drawGrid();
         this.gems.forEach(g => g.draw(this.ctx));
+        this.particles.forEach(p => p.draw(this.ctx)); // Draw particles
         this.bullets.forEach(b => b.draw(this.ctx));
         this.enemies.forEach(e => e.draw(this.ctx));
         this.player.draw(this.ctx);
@@ -145,22 +181,13 @@ export class Game {
     }
 
     updateUI() {
-        // HP Bar
         const hpPct = Math.max(0, (this.player.hp / this.player.maxHp) * 100);
         document.getElementById('hpBar').style.width = `${hpPct}%`;
-        
-        // XP Bar
         const xpPct = Math.min(100, (this.player.xp / this.player.nextLevel) * 100);
         document.getElementById('xpBar').style.width = `${xpPct}%`;
-
         document.getElementById('lvlDisplay').innerText = this.player.level;
         document.getElementById('goldDisplay').innerText = this.player.gold;
         document.getElementById('waveNum').innerText = this.wave;
         document.getElementById('timeNum').innerText = Math.max(0, Math.ceil(this.waveTimer));
-    }
-
-    endGame() {
-        this.gameOver = true;
-        document.getElementById('gameover').style.display = 'flex';
     }
 }
