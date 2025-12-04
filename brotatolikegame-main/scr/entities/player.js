@@ -1,0 +1,113 @@
+import { CONFIG } from '../constants.js';
+import { Bullet } from './bullet.js';
+import { Utils } from '../utils.js';
+
+export class Player {
+    constructor(game) {
+        this.game = game; // Reference to main game to access enemy list
+        this.x = CONFIG.WORLD_SIZE / 2;
+        this.y = CONFIG.WORLD_SIZE / 2;
+        this.vx = 0;
+        this.vy = 0;
+        this.size = 20;
+        
+        this.hp = CONFIG.PLAYER.baseHp;
+        this.maxHp = CONFIG.PLAYER.baseHp;
+        this.xp = 0;
+        this.level = 1;
+        this.nextLevel = 10;
+        this.gold = 0;
+
+        // Weapon Inventory
+        this.weapons = [
+            { name: 'Pistol', damage: 10, range: 400, cd: 40, timer: 0, speed: 12, type: 'single' }
+        ];
+    }
+
+    update(input) {
+        // 1. Movement
+        if (input.x !== 0) this.vx += input.x * 0.8;
+        if (input.y !== 0) this.vy += input.y * 0.8;
+
+        this.vx *= CONFIG.PLAYER.friction;
+        this.vy *= CONFIG.PLAYER.friction;
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Bounds
+        this.x = Math.max(this.size, Math.min(CONFIG.WORLD_SIZE - this.size, this.x));
+        this.y = Math.max(this.size, Math.min(CONFIG.WORLD_SIZE - this.size, this.y));
+
+        // 2. Weapons
+        this.handleCombat();
+    }
+
+    handleCombat() {
+        // Find nearest enemy
+        let nearest = null;
+        let minDist = Infinity;
+        
+        // Access enemies from the Game instance
+        this.game.enemies.forEach(e => {
+            const d = Utils.dist(this, e);
+            if (d < minDist) { minDist = d; nearest = e; }
+        });
+
+        this.weapons.forEach(w => {
+            if (w.timer > 0) w.timer--;
+            
+            if (w.timer <= 0 && nearest && minDist < w.range) {
+                const angle = Utils.angle(this, nearest);
+                this.fireWeapon(w, angle);
+                w.timer = w.cd;
+            }
+        });
+    }
+
+    fireWeapon(w, angle) {
+        if (w.type === 'single') {
+            this.game.bullets.push(new Bullet(this.x, this.y, angle, w));
+        } 
+        else if (w.type === 'shotgun') {
+            for(let i = -1; i <= 1; i++) {
+                this.game.bullets.push(new Bullet(this.x, this.y, angle + (i*0.2), w));
+            }
+        }
+    }
+
+    gainXp(amount) {
+        this.xp += amount;
+        this.gold += amount;
+        if (this.xp >= this.nextLevel) {
+            this.levelUp();
+        }
+    }
+
+    levelUp() {
+        this.level++;
+        this.xp = 0;
+        this.nextLevel = Math.floor(this.nextLevel * 1.5);
+        this.maxHp += 5;
+        this.hp = this.maxHp;
+        
+        // Simple progression
+        if (this.level === 3) {
+            this.weapons.push({ name: 'Shotgun', damage: 6, range: 250, cd: 60, timer: 0, speed: 10, type: 'shotgun' });
+            console.log("Unlocked Shotgun");
+        }
+    }
+
+    draw(ctx) {
+        ctx.fillStyle = CONFIG.COLORS.player;
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        
+        // Headband
+        ctx.fillStyle = 'red';
+        ctx.fillRect(this.x - 18, this.y - 12, 36, 6);
+    }
+}
