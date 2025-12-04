@@ -16,6 +16,9 @@ export class Player {
         this.level = 1;
         this.nextLevel = 10;
         this.gold = 0;
+        
+        // New: Magnet Range
+        this.pickupRange = CONFIG.PLAYER.basePickupRange || 100;
 
         // Init weapons with angle tracking
         this.weapons = [ { ...CONFIG.WEAPONS.pistol, timer: 0, angle: 0, kickback: 0 } ];
@@ -69,7 +72,7 @@ export class Player {
     }
 
     fireWeapon(w, angle) {
-        if (w.type === 'single' || w.type === 'explosive') {
+        if (w.type === 'single' || w.type === 'explosive' || w.type === 'piercing') {
             this.game.bullets.push(new Bullet(this.x, this.y, angle, w));
         } else if (w.type === 'shotgun') {
             for(let i = -1; i <= 1; i++) {
@@ -89,6 +92,7 @@ export class Player {
         else if (item.type === 'damage') this.weapons.forEach(w => w.damage += item.val);
         else if (item.type === 'speed') CONFIG.PLAYER.baseSpeed += item.val;
         else if (item.type === 'cooldown') this.weapons.forEach(w => w.cd = Math.max(5, w.cd - item.val));
+        else if (item.type === 'magnet') this.pickupRange += item.val; // NEW
     }
 
     gainXp(amount) {
@@ -141,6 +145,10 @@ export class Player {
             else if (w.name === 'SMG') {
                 ctx.fillStyle = '#222';    ctx.fillRect(15, -3, 20, 6); // Body
                 ctx.fillRect(15, 3, 5, 8); // Mag
+            }
+            else if (w.name === 'Laser') { // NEW
+                ctx.fillStyle = '#0000ff'; ctx.fillRect(5, -2, 40, 4);  // Blue Barrel
+                ctx.fillStyle = '#aaa';    ctx.fillRect(5, -4, 10, 8);  // Battery Pack
             }
             else { // Pistol
                 ctx.fillStyle = '#999';    ctx.fillRect(15, -3, 15, 6);

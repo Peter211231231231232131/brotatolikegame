@@ -8,18 +8,19 @@ export class Gem {
         this.value = value;
         this.size = 8;
         this.markedForDeletion = false;
+        this.bobOffset = Math.random() * 100;
     }
 
     update(player) {
         const dist = Utils.dist(this, player);
         
-        // Magnet
-        if (dist < 100) {
+        // Magnet Logic (Using Player's range)
+        if (dist < player.pickupRange) {
             this.x += (player.x - this.x) * 0.15;
             this.y += (player.y - this.y) * 0.15;
         }
 
-        // Collect
+        // Collection
         if (dist < player.size + this.size) {
             player.gainXp(this.value);
             this.markedForDeletion = true;
@@ -27,9 +28,12 @@ export class Gem {
     }
 
     draw(ctx) {
+        // Bobbing animation
+        const bob = Math.sin((Date.now() / 200) + this.bobOffset) * 2;
+        
         ctx.fillStyle = CONFIG.COLORS.gem;
         ctx.beginPath();
-        ctx.rect(this.x - 4, this.y - 4, 8, 8);
+        ctx.rect(this.x - 4, this.y - 4 + bob, 8, 8);
         ctx.fill();
     }
 }

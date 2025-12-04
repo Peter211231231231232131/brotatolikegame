@@ -12,3 +12,7 @@ Added: new enemy - a tanky enemy
 added 2 new wepeons 
 1. SMG
 2. Bazuka
+
+Update 3 12/5/2025
+Added new enemies and new wepeons
+changed how enemies stacked ontop of each other
